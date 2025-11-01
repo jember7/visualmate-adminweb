@@ -1,0 +1,59 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* App Layout */
+.app-container {
+  @apply flex flex-col min-h-screen;
+}
+
+/* Header */
+.app-header {
+  @apply py-4 bg-white shadow-md px-6 flex items-center;
+}
+
+.logo {
+  @apply text-2xl font-bold text-blue-600;
+}
+
+/* Body */
+.app-body {
+  @apply flex flex-1 items-center justify-center bg-black;
+}
+
+/* Card */
+.login-card {
+  @apply bg-white text-black p-10 rounded-2xl shadow-2xl w-[400px] flex flex-col justify-center;
+}
+
+.login-title {
+  @apply text-2xl font-semibold mb-8 text-center;
+}
+
+/* Form */
+.login-form {
+  @apply flex flex-col gap-5;
+}
+
+.input-field {
+  @apply border border-gray-300 rounded-md px-4 py-3 w-full focus:outline-none focus:ring-2 focus:ring-blue-500;
+}
+
+/* Password with eye */
+.password-wrapper {
+  @apply relative w-full;
+}
+
+.eye-button {
+  @apply absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-600 hover:text-gray-800;
+}
+
+/* Button */
+.login-button {
+  @apply bg-blue-600 text-white font-semibold py-3 rounded-md hover:bg-blue-700 transition;
+}
+
+/* Forgot password */
+.forgot-password {
+  @apply mt-4 text-sm text-blue-600 text-center cursor-pointer hover:underline;
+}
