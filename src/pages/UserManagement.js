@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Header from "../components/Header";
 import Sidebar from "../components/Sidebar";
 import UserTable2 from "../components/UserTable2";
@@ -10,13 +10,21 @@ function UserManagement() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [refreshFlag, setRefreshFlag] = useState(false);
 
-  // 🔹 New states for search + filter
+  // search + filter
   const [searchTerm, setSearchTerm] = useState("");
   const [roleFilter, setRoleFilter] = useState("");
 
-  // Function to refresh users table
-  const refreshUsers = () => {
-    setRefreshFlag(prev => !prev);
+  const refreshUsers = () => setRefreshFlag((p) => !p);
+
+  // DEBUG: show the role in console so you can verify what the app receives
+  useEffect(() => {
+    console.log("UserManagement: userRole =", userRole);
+  }, [userRole]);
+
+  // tolerant check: case-insensitive + trim
+  const isSuperAdmin = (role) => {
+    if (!role) return false;
+    return String(role).trim().toLowerCase() === "superadmin";
   };
 
   return (
@@ -30,7 +38,6 @@ function UserManagement() {
           <h2 className="text-3xl font-bold mb-6">User Account List</h2>
 
           <div className="flex flex-col md:flex-row md:items-center gap-4 mb-6">
-            {/* 🔹 Search input */}
             <input
               type="text"
               placeholder="Search users..."
@@ -39,7 +46,6 @@ function UserManagement() {
               className="border border-gray-300 rounded-md px-4 py-2 w-full md:w-1/2"
             />
 
-            {/* 🔹 Role filter */}
             <select
               value={roleFilter}
               onChange={(e) => setRoleFilter(e.target.value)}
@@ -52,7 +58,7 @@ function UserManagement() {
               <option value="impaired">Impaired</option>
             </select>
 
-            {userRole === "superadmin" && (
+            {isSuperAdmin(userRole) && (
               <button
                 className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition"
                 onClick={() => setIsModalOpen(true)}
@@ -62,7 +68,6 @@ function UserManagement() {
             )}
           </div>
 
-          {/* 🔹 Pass search + filter into table */}
           <UserTable2
             showManage={true}
             refreshFlag={refreshFlag}

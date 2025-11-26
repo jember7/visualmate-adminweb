@@ -25,23 +25,18 @@ function Dashboard() {
         const data = doc.data();
         const role = data.role?.toLowerCase();
 
-        // exclude admins from total
         if (role === "admin" || role === "superadmin") return;
 
         total++;
         if (role === "carer") carers++;
         if (role === "impaired") impaired++;
-
-        // count new users (last 7 days)
-        if (data.createdAt?.toMillis() > oneWeekAgo) {
-          newUsers++;
-        }
+        if (data.createdAt?.toMillis() > oneWeekAgo) newUsers++;
       });
 
       setAnalyticsData([
         { title: "Carers", value: carers },
         { title: "Impaired", value: impaired },
-        { title: "New Users (7 days)", value: newUsers },
+        { title: "New Users (Last 7 Days)", value: newUsers },
         { title: "Total Users", value: total },
       ]);
     };
@@ -50,27 +45,40 @@ function Dashboard() {
   }, []);
 
   return (
-    <div className="dashboard-container flex flex-col min-h-screen">
-      {/* Header with admin info */}
+    <div className="dashboard-container flex flex-col min-h-screen bg-gradient-to-br from-gray-100 to-gray-200">
+      {/* HEADER */}
       <Header showAdmin={true} />
 
       <div className="flex flex-1">
-        {/* Sidebar */}
+        {/* SIDEBAR */}
         <Sidebar />
 
-        {/* Main content */}
-        <main className="flex-1 p-6 bg-gray-100">
-          <h2 className="text-3xl font-bold mb-6">Dashboard</h2>
+        {/* MAIN CONTENT */}
+        <main className="flex-1 p-10 overflow-y-auto">
+          {/* Title */}
+          <h2 className="text-4xl font-extrabold mb-8 bg-gradient-to-r from-blue-600 to-blue-400 bg-clip-text text-transparent drop-shadow">
+            Dashboard Overview
+          </h2>
 
-          {/* Analytics */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+          {/* Analytics Cards */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
             {analyticsData.map((item, idx) => (
-              <AnalyticsCard key={idx} title={item.title} value={item.value} />
+              <div
+                key={idx}
+                className="bg-white rounded-2xl shadow-lg p-6 border border-gray-200 hover:shadow-2xl hover:scale-[1.02] transition transform duration-300"
+              >
+                <AnalyticsCard title={item.title} value={item.value} />
+              </div>
             ))}
           </div>
 
-          {/* User Table */}
-          <UserTable />
+          {/* User Table Section */}
+          <div className="bg-white rounded-2xl p-6 shadow-xl border border-gray-200">
+            <h3 className="text-2xl font-semibold mb-4 text-gray-800">
+              User Records
+            </h3>
+            <UserTable />
+          </div>
         </main>
       </div>
     </div>

@@ -31,7 +31,7 @@ function AddAdminModal({ isOpen, onClose, currentUserRole, refreshUsers }) {
       );
       const newUser = userCredential.user;
 
-      // Save user info in Firestore (NO username field)
+      // Save user info in Firestore WITH active: true
       await setDoc(doc(db, "users", newUser.uid), {
         uid: newUser.uid,
         fullName,
@@ -39,13 +39,16 @@ function AddAdminModal({ isOpen, onClose, currentUserRole, refreshUsers }) {
         address,
         contactNumber,
         role,
+        active: true,             // <-- ADDED HERE
         createdAt: serverTimestamp(),
       });
 
-      // Fetch current admin's fullName
+      // Fetch current admin's name
       const currentAdminRef = doc(db, "users", currentUser.uid);
       const currentAdminSnap = await getDoc(currentAdminRef);
-      const adminName = currentAdminSnap.exists() ? currentAdminSnap.data().fullName : "Unknown";
+      const adminName = currentAdminSnap.exists()
+        ? currentAdminSnap.data().fullName || currentAdminSnap.data().name
+        : "Unknown";
 
       // Log admin action
       await addDoc(collection(db, "adminLogs"), {
@@ -58,15 +61,13 @@ function AddAdminModal({ isOpen, onClose, currentUserRole, refreshUsers }) {
 
       alert(`✅ ${role} added successfully!`);
 
-      // Reset form
+      // Reset
       setFullName("");
       setEmail("");
       setAddress("");
       setContactNumber("");
       setRole("admin");
       onClose();
-
-      // Refresh user table
       refreshUsers();
 
       // Sign out secondaryAuth
@@ -96,6 +97,7 @@ function AddAdminModal({ isOpen, onClose, currentUserRole, refreshUsers }) {
             className="border border-gray-300 rounded-md px-4 py-2 w-full"
             required
           />
+
           <input
             type="email"
             placeholder="Email Address"
@@ -104,6 +106,7 @@ function AddAdminModal({ isOpen, onClose, currentUserRole, refreshUsers }) {
             className="border border-gray-300 rounded-md px-4 py-2 w-full"
             required
           />
+
           <input
             type="text"
             placeholder="Address"
@@ -112,6 +115,7 @@ function AddAdminModal({ isOpen, onClose, currentUserRole, refreshUsers }) {
             className="border border-gray-300 rounded-md px-4 py-2 w-full"
             required
           />
+
           <input
             type="text"
             placeholder="Contact Number"
@@ -142,6 +146,7 @@ function AddAdminModal({ isOpen, onClose, currentUserRole, refreshUsers }) {
             >
               Cancel
             </button>
+
             <button
               type="submit"
               disabled={loading}
