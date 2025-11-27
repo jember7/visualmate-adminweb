@@ -4,7 +4,13 @@ import { useNavigate } from "react-router-dom";
 import { FaEye, FaEyeSlash, FaEnvelope, FaLock } from "react-icons/fa";
 import Header from "../components/Header";
 import { auth, db } from "../firebase";
-import { signInWithEmailAndPassword, signOut, setPersistence, browserLocalPersistence } from "firebase/auth";
+import {
+  signInWithEmailAndPassword,
+  signOut,
+  setPersistence,
+  browserLocalPersistence,
+  sendPasswordResetEmail
+} from "firebase/auth";
 import { doc, getDoc } from "firebase/firestore";
 
 function Admin() {
@@ -13,6 +19,10 @@ function Admin() {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
+  const [resetModalOpen, setResetModalOpen] = useState(false);
+  const [resetEmail, setResetEmail] = useState("");
+  const [resetLoading, setResetLoading] = useState(false);
+  const [resetMessage, setResetMessage] = useState("");
   const navigate = useNavigate();
 
   const handleLogin = async (e) => {
@@ -21,57 +31,99 @@ function Admin() {
     setLoading(true);
 
     try {
-      // Make auth persistence explicit
+      // ensure persistence
       await setPersistence(auth, browserLocalPersistence);
 
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
       const uid = userCredential.user.uid;
-      console.log("Signed in (login):", uid, userCredential.user.email);
 
       // fetch user profile from Firestore
       const userDocRef = doc(db, "users", uid);
       const userSnap = await getDoc(userDocRef);
 
       if (!userSnap.exists()) {
-        // no profile -> sign out and show error
-        await signOut(auth);
-        setErrorMsg("User profile not found. Contact support.");
+        // sign out to clean auth state and show message
+        try { await signOut(auth); } catch (sErr) { console.warn("signOut after missing profile failed:", sErr); }
+        setErrorMsg("User profile not found. Please contact support.");
         setLoading(false);
         return;
       }
 
       const userData = userSnap.data();
 
-      // Check role
+      // role check
       const role = (userData.role || "").toString().toLowerCase();
       if (!["admin", "superadmin"].includes(role)) {
-        await signOut(auth);
-        setErrorMsg("You do not have permission to log in.");
+        try { await signOut(auth); } catch (sErr) { console.warn("signOut after role rejected failed:", sErr); }
+        setErrorMsg("You do not have permission to access the admin panel.");
         setLoading(false);
         return;
       }
 
-      // Check active flag: must be true
-      if (userData.active !== true) {
-        await signOut(auth);
-        setErrorMsg("This account is inactive. Contact your administrator.");
-        setLoading(false);
-        return;
-      }
+      // active flag check
+      // treat anything other than strict true as inactive
+      // Check active flag
+if (userData.active !== true) {
+  setErrorMsg("This account has been deactivated. Please contact your supervisor or administrator.");
+  setLoading(false);
 
-      // All good
+  // sign out AFTER showing the error
+  setTimeout(async () => {
+    try { await signOut(auth); } catch {}
+  }, 200);
+
+  return;
+}
+
+      // success: navigate to dashboard
       navigate("/dashboard");
     } catch (err) {
       console.error("Login failed:", err);
-      // show friendlier messages for known errors
+      // friendlier known messages
       const code = err?.code || "";
       if (code === "auth/user-not-found" || code === "auth/wrong-password" || code === "auth/invalid-email") {
         setErrorMsg("Invalid email or password.");
+      } else if (code === "auth/too-many-requests") {
+        setErrorMsg("Too many attempts. Please try again later or reset your password.");
       } else {
-        setErrorMsg(err?.message || "Login failed. Try again.");
+        // fallback to server message if available
+        setErrorMsg(err?.message || "Login failed. Please try again.");
       }
     } finally {
       setLoading(false);
+    }
+  };
+
+  // PASSWORD RESET FLOW
+  const openResetModal = () => {
+    setResetEmail(email || "");
+    setResetMessage("");
+    setResetModalOpen(true);
+  };
+
+  const handleSendReset = async () => {
+    setResetMessage("");
+    if (!resetEmail || !resetEmail.includes("@")) {
+      setResetMessage("Please enter a valid email address.");
+      return;
+    }
+
+    setResetLoading(true);
+    try {
+      await sendPasswordResetEmail(auth, resetEmail);
+      setResetMessage("A password reset email was sent. Check your inbox.");
+    } catch (err) {
+      console.error("Password reset failed:", err);
+      const code = err?.code || "";
+      if (code === "auth/user-not-found") {
+        setResetMessage("No account found with that email.");
+      } else if (code === "auth/invalid-email") {
+        setResetMessage("Invalid email address.");
+      } else {
+        setResetMessage(err?.message || "Failed to send reset email. Try again.");
+      }
+    } finally {
+      setResetLoading(false);
     }
   };
 
@@ -79,16 +131,21 @@ function Admin() {
     <div className="app-container flex flex-col min-h-screen">
       <Header showAdmin={false} />
 
-      {/* Dark shaded background */}
-      <main className="flex-1 flex items-center justify-center"
-            style={{
-              background: "linear-gradient(180deg, rgba(4,6,8,0.9) 0%, rgba(15,15,15,0.95) 50%, rgba(2,6,10,1) 100%)"
-            }}>
-
+      <main
+        className="flex-1 flex items-center justify-center"
+        style={{
+          background:
+            "linear-gradient(180deg, rgba(4,6,8,0.9) 0%, rgba(15,15,15,0.95) 50%, rgba(2,6,10,1) 100%)",
+        }}
+      >
         <div className="w-full max-w-md mx-4">
-          <div className="relative rounded-2xl overflow-hidden shadow-2xl"
-               style={{ background: "linear-gradient(135deg, rgba(255,255,255,0.03), rgba(255,255,255,0.01))", border: "1px solid rgba(255,255,255,0.04)" }}>
-            {/* subtle header area inside card */}
+          <div
+            className="relative rounded-2xl overflow-hidden shadow-2xl"
+            style={{
+              background: "linear-gradient(135deg, rgba(255,255,255,0.03), rgba(255,255,255,0.01))",
+              border: "1px solid rgba(255,255,255,0.04)",
+            }}
+          >
             <div className="px-8 py-6 border-b" style={{ borderColor: "rgba(255,255,255,0.03)" }}>
               <h2 className="text-2xl text-white font-semibold">Admin Login</h2>
               <p className="text-sm text-gray-300 mt-1">Sign in with your administrator account</p>
@@ -162,23 +219,51 @@ function Admin() {
                   <span>{loading ? "Signing in..." : "Login"}</span>
                 </button>
 
-                <button
-                  type="button"
-                  className="text-sm text-gray-300 hover:text-white"
-                  onClick={() => alert("Password reset flow not implemented.")}
-                >
+                <button type="button" className="text-sm text-gray-300 hover:text-white" onClick={() => {
+                  openResetModal();
+                }}>
                   Forgot password?
                 </button>
               </div>
             </form>
 
-            {/* footer small note */}
             <div className="px-8 py-4 text-center text-xs text-gray-500 border-t" style={{ borderColor: "rgba(255,255,255,0.02)" }}>
               Secure admin access • VisualMate
             </div>
           </div>
         </div>
       </main>
+
+      {/* Password reset modal */}
+      {resetModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+          <div className="bg-white rounded-2xl shadow-lg w-full max-w-md p-6">
+            <h3 className="text-lg font-semibold mb-2">Reset Password</h3>
+            <p className="text-sm text-gray-600 mb-4">Enter the email address for the account and we'll send a reset link.</p>
+
+            <input
+              type="email"
+              value={resetEmail}
+              onChange={(e) => setResetEmail(e.target.value)}
+              placeholder="you@domain.com"
+              className="w-full p-3 border rounded mb-3"
+            />
+
+            {resetMessage && <p className="text-sm mb-3" style={{ color: resetMessage.startsWith("A password") ? "#065f46" : "#b91c1c" }}>{resetMessage}</p>}
+
+            <div className="flex justify-end gap-2">
+              <button onClick={() => setResetModalOpen(false)} className="px-4 py-2 rounded bg-gray-200 hover:bg-gray-300">Cancel</button>
+              <button
+                onClick={handleSendReset}
+                disabled={resetLoading}
+                className="px-4 py-2 rounded bg-indigo-600 text-white hover:bg-indigo-700 disabled:opacity-50"
+              >
+                {resetLoading ? "Sending..." : "Send reset email"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

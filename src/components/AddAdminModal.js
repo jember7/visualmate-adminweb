@@ -1,9 +1,11 @@
+// AddAdminModal.jsx
 import React, { useState } from "react";
 import { db, firebaseConfig } from "../firebase";
 import { collection, addDoc, serverTimestamp, doc, setDoc, getDoc } from "firebase/firestore";
 import { initializeApp } from "firebase/app";
 import { getAuth, createUserWithEmailAndPassword, signOut } from "firebase/auth";
 import { useAuth } from "../context/AuthContext";
+import { FaUser, FaEnvelope, FaHome, FaPhone, FaUserShield } from "react-icons/fa";
 
 // Secondary Firebase app to avoid logging out current user
 const secondaryApp = initializeApp(firebaseConfig, "Secondary");
@@ -39,7 +41,7 @@ function AddAdminModal({ isOpen, onClose, currentUserRole, refreshUsers }) {
         address,
         contactNumber,
         role,
-        active: true,             // <-- ADDED HERE
+        active: true, // <-- ADDED HERE
         createdAt: serverTimestamp(),
       });
 
@@ -72,10 +74,9 @@ function AddAdminModal({ isOpen, onClose, currentUserRole, refreshUsers }) {
 
       // Sign out secondaryAuth
       await signOut(secondaryAuth);
-
     } catch (error) {
       console.error("Error adding admin:", error.message);
-      alert("❌ Failed to add admin: " + error.message);
+      alert("❌ Failed to add admin: " + (error.message || error));
     } finally {
       setLoading(false);
     }
@@ -84,65 +85,124 @@ function AddAdminModal({ isOpen, onClose, currentUserRole, refreshUsers }) {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
-      <div className="bg-white p-6 rounded-lg shadow-lg w-full max-w-md">
-        <h2 className="text-xl font-bold mb-4">Add Admin</h2>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+      <div className="w-full max-w-2xl bg-gradient-to-br from-white/90 to-white/80 rounded-2xl shadow-2xl overflow-hidden border border-gray-200">
+        {/* Header */}
+        <div className="flex items-center gap-4 px-6 py-4 bg-gradient-to-r from-indigo-600 to-emerald-500 text-white">
+          <div className="flex items-center justify-center w-12 h-12 bg-white/20 rounded-lg">
+            <FaUserShield className="w-6 h-6" />
+          </div>
+          <div>
+            <h3 className="text-lg font-semibold">Add Administrator</h3>
+            <p className="text-sm opacity-90">Create a new admin or super admin account</p>
+          </div>
+          <div className="ml-auto text-xs bg-white/10 px-3 py-1 rounded-md text-white/90">
+            Default password: <span className="font-medium ml-1">admin123</span>
+          </div>
+        </div>
 
-        <form onSubmit={handleAddAdmin} className="space-y-4">
-          <input
-            type="text"
-            placeholder="Full Name"
-            value={fullName}
-            onChange={(e) => setFullName(e.target.value)}
-            className="border border-gray-300 rounded-md px-4 py-2 w-full"
-            required
-          />
+        {/* Body */}
+        <form onSubmit={handleAddAdmin} className="px-6 py-6 grid gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Full name */}
+            <label className="block">
+              <span className="text-xs text-gray-600">Full Name</span>
+              <div className="relative mt-1">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">
+                  <FaUser />
+                </span>
+                <input
+                  type="text"
+                  required
+                  value={fullName}
+                  onChange={(e) => setFullName(e.target.value)}
+                  placeholder="Juan Dela Cruz"
+                  className="w-full pl-10 pr-3 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-indigo-300"
+                />
+              </div>
+            </label>
 
-          <input
-            type="email"
-            placeholder="Email Address"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            className="border border-gray-300 rounded-md px-4 py-2 w-full"
-            required
-          />
+            {/* Email */}
+            <label className="block">
+              <span className="text-xs text-gray-600">Email Address</span>
+              <div className="relative mt-1">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">
+                  <FaEnvelope />
+                </span>
+                <input
+                  type="email"
+                  required
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="admin@example.com"
+                  className="w-full pl-10 pr-3 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-indigo-300"
+                />
+              </div>
+            </label>
 
-          <input
-            type="text"
-            placeholder="Address"
-            value={address}
-            onChange={(e) => setAddress(e.target.value)}
-            className="border border-gray-300 rounded-md px-4 py-2 w-full"
-            required
-          />
+            {/* Address */}
+            <label className="block">
+              <span className="text-xs text-gray-600">Address</span>
+              <div className="relative mt-1">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">
+                  <FaHome />
+                </span>
+                <input
+                  type="text"
+                  required
+                  value={address}
+                  onChange={(e) => setAddress(e.target.value)}
+                  placeholder="Barangay, City"
+                  className="w-full pl-10 pr-3 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-indigo-300"
+                />
+              </div>
+            </label>
 
-          <input
-            type="text"
-            placeholder="Contact Number"
-            value={contactNumber}
-            onChange={(e) => setContactNumber(e.target.value)}
-            className="border border-gray-300 rounded-md px-4 py-2 w-full"
-            required
-          />
+            {/* Contact */}
+            <label className="block">
+              <span className="text-xs text-gray-600">Contact Number</span>
+              <div className="relative mt-1">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">
+                  <FaPhone />
+                </span>
+                <input
+                  type="text"
+                  required
+                  value={contactNumber}
+                  onChange={(e) => setContactNumber(e.target.value)}
+                  placeholder="09XXXXXXXXX"
+                  className="w-full pl-10 pr-3 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-indigo-300"
+                />
+              </div>
+            </label>
+          </div>
 
-          <select
-            value={role}
-            onChange={(e) => setRole(e.target.value)}
-            className="border border-gray-300 rounded-md px-4 py-2 w-full"
-          >
-            <option value="admin">Admin</option>
-            <option value="superadmin">Super Admin</option>
-          </select>
+          {/* Role selector */}
+          <div className="flex items-center gap-4">
+            <label className="flex-1">
+              <span className="text-xs text-gray-600">Role</span>
+              <select
+                value={role}
+                onChange={(e) => setRole(e.target.value)}
+                className="mt-1 w-full py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-indigo-300"
+              >
+                <option value="admin">Admin</option>
+                <option value="superadmin">Super Admin</option>
+              </select>
+            </label>
 
-          <p className="text-sm text-gray-600">
-            Default password for new admin is <strong>admin123</strong>
-          </p>
+            {/* small helper */}
+            <div className="text-sm text-gray-500">
+              New admins are created with <strong>active</strong> status by default.
+            </div>
+          </div>
 
-          <div className="flex justify-end gap-2">
+          {/* Buttons */}
+          <div className="flex items-center justify-end gap-3 pt-2 border-t border-gray-100 mt-2">
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 border rounded-md hover:bg-gray-100 transition"
+              className="px-4 py-2 rounded-md border border-gray-300 bg-white hover:bg-gray-50"
             >
               Cancel
             </button>
@@ -150,9 +210,16 @@ function AddAdminModal({ isOpen, onClose, currentUserRole, refreshUsers }) {
             <button
               type="submit"
               disabled={loading}
-              className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition disabled:opacity-50"
+              className="px-5 py-2 rounded-md bg-indigo-600 hover:bg-indigo-700 text-white font-medium shadow inline-flex items-center gap-2"
             >
-              {loading ? "Adding..." : "Add Admin"}
+              {loading ? (
+                <svg className="w-4 h-4 animate-spin" viewBox="0 0 24 24" fill="none">
+                  <circle cx="12" cy="12" r="10" stroke="rgba(255,255,255,0.6)" strokeWidth="3"></circle>
+                  <path d="M4 12a8 8 0 018-8" stroke="white" strokeWidth="3" strokeLinecap="round"></path>
+                </svg>
+              ) : (
+                <span>Create</span>
+              )}
             </button>
           </div>
         </form>

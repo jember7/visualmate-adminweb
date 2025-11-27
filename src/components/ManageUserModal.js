@@ -4,6 +4,7 @@ import { getAuth } from "firebase/auth";
 import { db } from "../firebase";
 import { doc, getDoc, updateDoc, setDoc } from "firebase/firestore";
 import ViewLogsModal from "./ViewLogsModal";
+import { FaCheckCircle, FaTimesCircle, FaUserShield, FaHistory } from "react-icons/fa";
 
 /**
  * ManageUserModal
@@ -184,73 +185,139 @@ function ManageUserModal({ user, onClose, onDeactivate, onReactivate }) {
     }
   };
 
+  // small helper UI elements
+  const RoleBadge = ({ role }) => {
+    if (!role) return null;
+    const formatted = String(role).charAt(0).toUpperCase() + String(role).slice(1);
+    return (
+      <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-semibold bg-gray-100 text-gray-800">
+        <FaUserShield className="text-sm" />
+        {formatted}
+      </span>
+    );
+  };
+
+  const StatusPill = ({ active }) => (
+    <span
+      className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-sm font-medium ${
+        active ? "bg-green-50 text-green-700" : "bg-red-50 text-red-700"
+      }`}
+      aria-label={active ? "Active account" : "Inactive account"}
+    >
+      {active ? <FaCheckCircle className="text-green-600" /> : <FaTimesCircle className="text-red-600" />}
+      {active ? "Active" : "Inactive"}
+    </span>
+  );
+
+  // only show logs for impaired users
+  const showLogsForThisUser = (userRole) => {
+    return String(userRole || "").toLowerCase() === "impaired";
+  };
+
   return (
     <>
-      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-        <div className="bg-white rounded-2xl p-6 w-96 relative">
-          <button
-            className="absolute top-2 right-2 text-gray-600 hover:text-gray-900"
-            onClick={onClose}
-          >
-            ✕
-          </button>
+      <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+        <div className="bg-white rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden">
+          {/* Header */}
+          <div className="flex items-center justify-between px-6 py-4 border-b">
+            <div className="flex items-center gap-4">
+              <div className="flex flex-col">
+                <h3 className="text-lg font-semibold text-gray-900">
+                  {user?.fullName || user?.name || "User"}
+                </h3>
+                <div className="mt-1 flex items-center gap-2">
+                  <RoleBadge role={user?.role} />
+                  <StatusPill active={localActive === true} />
+                </div>
+              </div>
+            </div>
 
-          <h3 className="text-xl font-semibold text-center mb-2">
-            {user?.fullName || user?.name || "User"}
-          </h3>
-
-          <div className="text-center text-gray-500 mb-4 space-y-1">
-            <div>Name: {user?.fullName || user?.name || "N/A"}</div>
-            <div>Email: {user?.email || "N/A"}</div>
-            <div>Address: {user?.address || "N/A"}</div>
-            <div>Contact: {user?.contactNumber || user?.contact || "N/A"}</div>
+            <div className="flex items-center gap-3">
+              <button
+                onClick={onClose}
+                aria-label="Close modal"
+                className="text-gray-500 hover:text-gray-700 rounded p-2"
+              >
+                ✕
+              </button>
+            </div>
           </div>
 
-          <div className="flex flex-col gap-3">
-            {/* Show Reactivate only when account is inactive (localActive === false) */}
-            {localActive === false && (
-              <button
-                onClick={() => updateActiveField(true)}
-                disabled={loading}
-                className="bg-green-500 text-white py-2 rounded hover:bg-green-600 disabled:opacity-50"
-              >
-                {loading ? "Processing..." : "Reactivate Account"}
-              </button>
-            )}
+          {/* Body */}
+          <div className="px-6 py-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-gray-700">
+              <div>
+                <p className="text-xs text-gray-500 uppercase">Name</p>
+                <p className="mt-1 font-medium text-gray-900">{user?.fullName || user?.name || "N/A"}</p>
+              </div>
 
-            {/* Show Deactivate only when account is active (localActive === true) */}
-            {localActive === true && (
-              <button
-                onClick={() => {
-                  if (!window.confirm("Are you sure you want to deactivate this account?")) return;
-                  updateActiveField(false);
-                }}
-                disabled={loading}
-                className="bg-red-500 text-white py-2 rounded hover:bg-red-600 disabled:opacity-50"
-              >
-                {loading ? "Processing..." : "Deactivate Account"}
-              </button>
-            )}
+              <div>
+                <p className="text-xs text-gray-500 uppercase">Email</p>
+                <p className="mt-1 font-medium text-gray-900">{user?.email || "N/A"}</p>
+              </div>
 
-            <button
-              onClick={() => setLogsOpen(true)}
-              className="bg-blue-500 text-white py-2 rounded hover:bg-blue-600"
-            >
-              View Logs
-            </button>
+              <div>
+                <p className="text-xs text-gray-500 uppercase">Address</p>
+                <p className="mt-1 text-gray-800">{user?.address || "N/A"}</p>
+              </div>
 
-            {/* TEMP: create admin users doc for currently signed-in caller if missing.
-                Remove this block after you create the admin doc. */}
-            {needsAdminDoc && (
-              <button
-                onClick={createAdminDoc}
-                disabled={loading}
-                className="bg-purple-600 text-white py-2 rounded hover:bg-purple-700 disabled:opacity-50"
-                title="Click once to create users/{your-uid} document with role: superadmin"
-              >
-                {loading ? "Creating..." : "Create My Admin Doc (TEMP)"}
-              </button>
-            )}
+              <div>
+                <p className="text-xs text-gray-500 uppercase">Contact</p>
+                <p className="mt-1 text-gray-800">{user?.contactNumber || user?.contact || "N/A"}</p>
+              </div>
+            </div>
+
+            <div className="mt-6 border-t pt-4 flex items-center justify-between gap-4">
+              <div className="flex items-center gap-3">
+                {/* Show View Logs only for impaired users */}
+                {showLogsForThisUser(user?.role) && (
+                  <button
+                    onClick={() => setLogsOpen(true)}
+                    className="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-blue-50 text-blue-700 hover:bg-blue-100 transition"
+                  >
+                    <FaHistory /> View Logs
+                  </button>
+                )}
+
+                {needsAdminDoc && (
+                  <button
+                    onClick={createAdminDoc}
+                    disabled={loading}
+                    className="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-purple-600 text-white hover:bg-purple-700 transition"
+                    title="Create users/{your-uid} (temporary)"
+                  >
+                    {loading ? "Creating..." : "Create Admin Doc"}
+                  </button>
+                )}
+              </div>
+
+              <div className="flex items-center gap-3">
+                {/* Reactivate button only when account is inactive */}
+                {localActive === false && (
+                  <button
+                    onClick={() => updateActiveField(true)}
+                    disabled={loading}
+                    className="px-4 py-2 rounded-lg bg-green-600 text-white hover:bg-green-700 transition shadow"
+                  >
+                    {loading ? "Processing..." : "Reactivate Account"}
+                  </button>
+                )}
+
+                {/* Deactivate button only when account is active */}
+                {localActive === true && (
+                  <button
+                    onClick={() => {
+                      if (!window.confirm("Are you sure you want to deactivate this account?")) return;
+                      updateActiveField(false);
+                    }}
+                    disabled={loading}
+                    className="px-4 py-2 rounded-lg bg-red-600 text-white hover:bg-red-700 transition shadow"
+                  >
+                    {loading ? "Processing..." : "Deactivate Account"}
+                  </button>
+                )}
+              </div>
+            </div>
           </div>
         </div>
       </div>
