@@ -40,12 +40,14 @@ function Header({ showAdmin = false }) {
     }
   };
 
-  // Click Logo → Only go home when logged in
-  const handleLogoClick = () => {
-    if (currentUser) {
-      navigate("/dashboard");
-    }
-  };
+const handleLogoClick = () => {
+  if (currentUser) {
+    navigate("/dashboard");
+  } else {
+    navigate("/");
+  }
+};
+
 
   return (
     <header className="flex justify-between items-center bg-white px-6 py-4 shadow-md relative">

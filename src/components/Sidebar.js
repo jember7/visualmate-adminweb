@@ -1,6 +1,7 @@
 // Sidebar.jsx
 import React from "react";
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
+import { useAuth } from "../context/AuthContext";
 import { getAuth, signOut } from "firebase/auth";
 
 /**
@@ -9,7 +10,9 @@ import { getAuth, signOut } from "firebase/auth";
  */
 export default function Sidebar({ onLogout } = {}) {
   const location = useLocation();
-
+  const navigate = useNavigate();
+   const { currentUser, userProfile } = useAuth();
+    const auth = getAuth();
   const options = [
     { name: "Dashboard", path: "/dashboard", icon: "dashboard" },
     { name: "User Management", path: "/user-management", icon: "users" },
@@ -17,23 +20,14 @@ export default function Sidebar({ onLogout } = {}) {
     { name: "Feedback & FAQs", path: "/feedback", icon: "help" },
   ];
 
-  const handleLogout = async () => {
-    try {
-      if (typeof onLogout === "function") {
-        await onLogout();
-        return;
-      }
-      // fallback: attempt firebase auth signOut if firebase is initialized
-      try {
-        const auth = getAuth();
-        await signOut(auth);
-      } catch (err) {
-        console.warn("No onLogout provided and firebase signOut failed:", err);
-      }
-    } catch (err) {
-      console.error("Logout failed", err);
-    }
-  };
+ const handleSignOut = async () => {
+  try {
+    await signOut(auth);
+    navigate("/"); // send user to login page
+  } catch (error) {
+    console.error("Sign out failed:", error.message);
+  }
+};
 
   const Icon = ({ name, className = "w-5 h-5" }) => {
     // inline SVGs for common icons — extend as needed
@@ -84,7 +78,8 @@ export default function Sidebar({ onLogout } = {}) {
   };
 
   return (
-    <aside className="flex flex-col w-64 h-screen bg-gradient-to-b from-slate-900 via-slate-800 to-slate-900 text-slate-100 shadow-xl">
+    <aside className="flex flex-col w-64 min-h-screen bg-gradient-to-b from-slate-900 via-slate-800 to-slate-900 text-slate-100 shadow-xl sticky top-0">
+
       {/* top brand / avatar */}
       <div className="px-6 pt-6 pb-4 flex items-center gap-3">
         <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-indigo-500 to-emerald-400 flex items-center justify-center text-white text-lg font-bold shadow-lg">
@@ -135,14 +130,14 @@ export default function Sidebar({ onLogout } = {}) {
       {/* bottom area */}
       <div className="px-4 py-4 border-t border-slate-700">
         
+<button
+  onClick={handleSignOut}
+  className="w-full flex items-center gap-3 justify-center px-3 py-2 rounded-lg bg-transparent hover:bg-red-600/20 transition text-red-400 border border-transparent hover:border-red-600"
+>
+  <Icon name="logout" className="w-5 h-5 text-red-400" />
+  <span className="text-sm font-medium">Log out</span>
+</button>
 
-        <button
-          onClick={handleLogout}
-          className="w-full flex items-center gap-3 justify-center px-3 py-2 rounded-lg bg-transparent hover:bg-red-600/20 transition text-red-400 border border-transparent hover:border-red-600"
-        >
-          <Icon name="logout" className="w-5 h-5 text-red-400" />
-          <span className="text-sm font-medium">Log out</span>
-        </button>
       </div>
     </aside>
   );

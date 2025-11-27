@@ -5,7 +5,6 @@ import AnalyticsCard from "../components/AnalyticsCard";
 import UserTable from "../components/UserTable";
 import { db } from "../firebase";
 import { collection, getDocs } from "firebase/firestore";
-import "../index.css";
 
 function Dashboard() {
   const [analyticsData, setAnalyticsData] = useState([]);
@@ -25,6 +24,7 @@ function Dashboard() {
         const data = doc.data();
         const role = data.role?.toLowerCase();
 
+        // exclude admin accounts
         if (role === "admin" || role === "superadmin") return;
 
         total++;
@@ -45,36 +45,33 @@ function Dashboard() {
   }, []);
 
   return (
-    <div className="dashboard-container flex flex-col min-h-screen bg-gradient-to-br from-gray-100 to-gray-200">
-      {/* HEADER */}
+    <div className="flex flex-col min-h-screen bg-gray-100">
       <Header showAdmin={true} />
 
-      <div className="flex flex-1">
-        {/* SIDEBAR */}
+      <div className="flex flex-1 overflow-hidden">
         <Sidebar />
 
-        {/* MAIN CONTENT */}
-        <main className="flex-1 p-10 overflow-y-auto">
-          {/* Title */}
-          <h2 className="text-4xl font-extrabold mb-8 bg-gradient-to-r from-blue-600 to-blue-400 bg-clip-text text-transparent drop-shadow">
+        <main className="flex-1 p-6 overflow-y-auto">
+          <h2 className="text-3xl font-bold mb-6 bg-gradient-to-r from-blue-600 to-blue-400 bg-clip-text text-transparent">
             Dashboard Overview
           </h2>
 
-          {/* Analytics Cards */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
+          {/* Smaller Analytics Cards */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
             {analyticsData.map((item, idx) => (
               <div
                 key={idx}
-                className="bg-white rounded-2xl shadow-lg p-6 border border-gray-200 hover:shadow-2xl hover:scale-[1.02] transition transform duration-300"
+                className="bg-white rounded-xl shadow-md p-4 border border-gray-200 
+                hover:shadow-lg transition duration-300"
               >
                 <AnalyticsCard title={item.title} value={item.value} />
               </div>
             ))}
           </div>
 
-          {/* User Table Section */}
-          <div className="bg-white rounded-2xl p-6 shadow-xl border border-gray-200">
-            <h3 className="text-2xl font-semibold mb-4 text-gray-800">
+          {/* User Table */}
+          <div className="bg-white rounded-xl p-6 shadow-lg border border-gray-200 mb-2">
+            <h3 className="text-xl font-semibold mb-4 text-gray-800">
               User Records
             </h3>
             <UserTable />
